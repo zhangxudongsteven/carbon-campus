@@ -55,57 +55,57 @@ const seasonData = [
 
 // Custom Markdown Components for Beautiful Rendering
 const MarkdownComponents = {
-  h1: ({ children }: { children: React.ReactNode }) => (
+  h1: ({ children }: { children?: React.ReactNode }) => (
     <h1 className="text-3xl font-bold mb-6 mt-8 pb-3 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent border-b border-cyan-500/30 animate-fade-in">
       {children}
     </h1>
   ),
-  h2: ({ children }: { children: React.ReactNode }) => (
+  h2: ({ children }: { children?: React.ReactNode }) => (
     <h2 className="text-2xl font-bold mb-5 mt-7 pb-2 bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent border-b border-cyan-500/20">
       {children}
     </h2>
   ),
-  h3: ({ children }: { children: React.ReactNode }) => (
+  h3: ({ children }: { children?: React.ReactNode }) => (
     <h3 className="text-xl font-bold mb-4 mt-6 text-cyan-300 flex items-center gap-2">
       <span className="w-1.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
       {children}
     </h3>
   ),
-  h4: ({ children }: { children: React.ReactNode }) => (
+  h4: ({ children }: { children?: React.ReactNode }) => (
     <h4 className="text-lg font-semibold mb-3 mt-5 text-cyan-200 pl-4 border-l-2 border-cyan-500/30">
       {children}
     </h4>
   ),
-  p: ({ children }: { children: React.ReactNode }) => (
+  p: ({ children }: { children?: React.ReactNode }) => (
     <p className="text-gray-300 mb-4 leading-relaxed text-justify">
       {children}
     </p>
   ),
-  strong: ({ children }: { children: React.ReactNode }) => (
+  strong: ({ children }: { children?: React.ReactNode }) => (
     <strong className="font-bold text-cyan-300 bg-cyan-500/10 px-1.5 py-0.5 rounded">
       {children}
     </strong>
   ),
-  em: ({ children }: { children: React.ReactNode }) => (
+  em: ({ children }: { children?: React.ReactNode }) => (
     <em className="italic text-cyan-200/90">{children}</em>
   ),
-  blockquote: ({ children }: { children: React.ReactNode }) => (
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
     <blockquote className="border-l-4 border-cyan-500/50 bg-gradient-to-r from-cyan-500/5 to-transparent pl-5 py-3 my-5 italic text-gray-300 rounded-r-lg backdrop-blur-sm">
       {children}
     </blockquote>
   ),
-  ul: ({ children }: { children: React.ReactNode }) => (
+  ul: ({ children }: { children?: React.ReactNode }) => (
     <ul className="space-y-2 mb-5 ml-2 marker:text-cyan-400">{children}</ul>
   ),
-  ol: ({ children }: { children: React.ReactNode }) => (
+  ol: ({ children }: { children?: React.ReactNode }) => (
     <ol className="space-y-2 mb-5 ml-2 marker:text-cyan-400 marker:font-bold">{children}</ol>
   ),
-  li: ({ children }: { children: React.ReactNode }) => (
+  li: ({ children }: { children?: React.ReactNode }) => (
     <li className="text-gray-300 leading-relaxed pl-2 hover:text-cyan-200 transition-colors duration-200">
       {children}
     </li>
   ),
-  code: ({ inline, className, children }: { inline?: boolean; className?: string; children: React.ReactNode }) => {
+  code: ({ inline, className, children }: { inline?: boolean; className?: string; children?: React.ReactNode }) => {
     if (inline) {
       return (
         <code className="bg-gray-800/80 text-cyan-300 px-2 py-1 rounded-md text-sm font-mono border border-cyan-500/20 hover:border-cyan-500/40 transition-all">
@@ -140,7 +140,7 @@ const MarkdownComponents = {
       </div>
     )
   },
-  a: ({ href, children, ...props }: { href?: string; children: React.ReactNode; [key: string]: any }) => (
+  a: ({ href, children, ...props }: { href?: string; children?: React.ReactNode; [key: string]: any }) => (
     <a
       href={href}
       className="text-cyan-400 underline hover:text-cyan-300 hover:decoration-2 underline-offset-2 transition-all duration-200 after:content-['_↗'] after:text-xs"
@@ -154,28 +154,28 @@ const MarkdownComponents = {
   hr: () => (
     <hr className="my-8 border-t border-gray-700/50 bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent h-0.5" />
   ),
-  table: ({ children }: { children: React.ReactNode }) => (
+  table: ({ children }: { children?: React.ReactNode }) => (
     <div className="my-6 overflow-x-auto rounded-lg border border-cyan-500/20 bg-gray-900/30 backdrop-blur-sm">
       <table className="w-full border-collapse">{children}</table>
     </div>
   ),
-  thead: ({ children }: { children: React.ReactNode }) => (
+  thead: ({ children }: { children?: React.ReactNode }) => (
     <thead className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-cyan-500/30">
       {children}
     </thead>
   ),
-  tbody: ({ children }: { children: React.ReactNode }) => (
+  tbody: ({ children }: { children?: React.ReactNode }) => (
     <tbody className="divide-y divide-gray-700/50">{children}</tbody>
   ),
-  tr: ({ children }: { children: React.ReactNode }) => (
+  tr: ({ children }: { children?: React.ReactNode }) => (
     <tr className="hover:bg-cyan-500/5 transition-colors duration-150">{children}</tr>
   ),
-  th: ({ children }: { children: React.ReactNode }) => (
+  th: ({ children }: { children?: React.ReactNode }) => (
     <th className="px-4 py-3 text-left text-sm font-semibold text-cyan-400 uppercase tracking-wider">
       {children}
     </th>
   ),
-  td: ({ children }: { children: React.ReactNode }) => (
+  td: ({ children }: { children?: React.ReactNode }) => (
     <td className="px-4 py-3 text-sm text-gray-300">{children}</td>
   ),
 }
