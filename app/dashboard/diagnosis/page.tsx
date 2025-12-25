@@ -146,7 +146,7 @@ ${diagnosisResult}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              🌿 智慧校园碳排放监测系统
+              🌿 武汉理工大学低碳校园智慧监测与诊断系统
             </div>
           </div>
 

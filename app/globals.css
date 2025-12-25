@@ -24,3 +24,136 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Markdown Content Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(6, 182, 212, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+  }
+}
+
+.markdown-content h1 {
+  animation: fade-in 0.5s ease-out;
+}
+
+.markdown-content h2 {
+  animation: fade-in 0.4s ease-out;
+}
+
+.markdown-content h3 {
+  animation: fade-in 0.3s ease-out;
+}
+
+.markdown-content p {
+  animation: slide-in 0.3s ease-out;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  animation: slide-in 0.3s ease-out;
+}
+
+.markdown-content li {
+  animation: slide-in 0.2s ease-out;
+}
+
+.markdown-content blockquote {
+  animation: fade-in 0.4s ease-out;
+}
+
+.markdown-content table {
+  animation: fade-in 0.5s ease-out;
+}
+
+.markdown-content tr {
+  transition: all 0.2s ease;
+}
+
+.markdown-content a {
+  transition: all 0.2s ease;
+}
+
+.markdown-content code {
+  transition: all 0.2s ease;
+}
+
+.markdown-content pre {
+  animation: fade-in 0.5s ease-out;
+}
+
+/* Custom scrollbar for markdown content */
+.markdown-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.markdown-content::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.5);
+  border-radius: 4px;
+}
+
+.markdown-content::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+  border-radius: 4px;
+}
+
+.markdown-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.5);
+}
+
+/* Add subtle gradient animation to code blocks */
+.markdown-content pre {
+  position: relative;
+  overflow: hidden;
+}
+
+.markdown-content pre::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(6, 182, 212, 0.1),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+

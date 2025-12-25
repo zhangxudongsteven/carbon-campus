@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     // Enhanced System Prompt
     const systemPrompt = `You are a senior campus carbon emission analysis expert with extensive experience in energy management, carbon accounting, and sustainability consulting. You specialize in creating comprehensive diagnostic reports for university carbon emissions.
 
-Your mission is to generate a professional, visually rich HTML-formatted diagnostic report that analyzes campus carbon emissions and provides actionable decarbonization strategies.
+Your mission is to generate a professional, visually rich Markdown-formatted diagnostic report that analyzes campus carbon emissions and provides actionable decarbonization strategies.
 
 Core Competencies:
 1. Quantitative Analysis: Benchmark emissions against industry standards (T/TJKZS 0001-2024, ISO 14064)
@@ -26,13 +26,12 @@ Report Structure Requirements:
 7. Conclusion and Recommendations
 
 Output Format:
-- Generate complete HTML content with inline CSS styling
-- Use professional color scheme: blues, greens for sustainability theme
-- Include section headers with icons (use Unicode/emoji)
-- Create tables for data presentation
-- Use charts/graphs descriptions (since actual charts need separate rendering)
-- Highlight key metrics with colored boxes
-- Make it print-ready and professional
+- Generate complete Markdown content
+- Use professional structuring with headers (#, ##, ###)
+- Use tables for data presentation
+- Use lists and bullet points for readability
+- Highlight key metrics with bold text
+- Make it professional and easy to read
 
 Style Guidelines:
 - Professional academic tone but accessible language
@@ -41,7 +40,7 @@ Style Guidelines:
 - Include specific numbers, percentages, and comparisons
 - Emphasize practical, actionable recommendations`
 
-    const userPrompt = `请基于以下校园碳排放监测数据，生成一份专业的HTML格式碳排放诊断报告：
+    const userPrompt = `请基于以下校园碳排放监测数据，生成一份专业的Markdown格式碳排放诊断报告：
 
 ## 📊 核心排放数据
 - **年度总碳排放**: ${data.yearEmission} 吨CO₂e
@@ -67,77 +66,58 @@ ${data.energySource.map((source: any) => `- ${source.name}: ${source.value}%`).j
 
 ## 📋 报告生成要求
 
-请生成一份完整的HTML格式校园碳排放诊断报告，参考专业碳排放核算报告的结构和风格，但重点在于诊断分析和策略建议。
+请生成一份完整的Markdown格式校园碳排放诊断报告，参考专业碳排放核算报告的结构和风格，但重点在于诊断分析和策略建议。
 
 ### 报告结构（必须包含以下所有部分）：
 
 #### 1. 报告封面与概要
 - 报告标题：校园碳排放智能诊断报告
 - 生成时间
-- 核心发现摘要（3-5个要点，用彩色标签突出显示）
+- 核心发现摘要（3-5个要点）
 
 #### 2. 碳排放现状评估
-- 总体排放水平评价（与标准对比，用进度条/仪表盘样式展示）
-- 主要排放源识别（饼图/柱状图描述）
+- 总体排放水平评价（与标准对比）
+- 主要排放源识别
 - Scope 1/2/3排放结构分析（表格形式）
 - 功能区排放分布（表格+重点标注高排放区域）
-- 达标情况分析（用✓/✗符号，绿色/红色标识）
+- 达标情况分析（使用✓/✗符号）
 
 #### 3. 问题诊断与根因分析
-- 识别Top 3关键问题（用编号卡片形式，每个问题包含：）
+- 识别Top 3关键问题（每个问题包含：）
   * 问题描述
   * 严重程度评级（★★★★★）
   * 根本原因分析（5 Whys方法）
   * 潜在影响
-- 风险预警（如不采取措施的后果预测）
-- 对标分析（与同类高校比较）
+- 风险预警
+- 对标分析
 
 #### 4. 节能降碳策略建议（核心重点部分，需详细展开）
 
 **短期措施（0-6个月，立即见效）**
-创建表格，包含以下列：
+创建Markdown表格，包含以下列：
 | 序号 | 措施名称 | 实施要点 | 预期减排量(tCO₂e/年) | 投资成本(万元) | 回收期(月) | 优先级 |
 
-至少包含5-8项措施，例如：
-- 暖通空调温控优化（夏季26°C、冬季20°C）
-- 照明系统时段管理
-- 行为节能宣传活动
-- 设备维护保养
-- 能耗监测平台建设
+至少包含5-8项措施。
 
 **中期措施（6-24个月，系统升级）**
-创建表格，包含：
+创建Markdown表格，包含：
 | 序号 | 措施名称 | 技术方案 | 预期减排量 | 投资成本 | 回收期(年) | 优先级 |
 
-至少包含6-10项措施，例如：
-- LED照明全面改造
-- 变频空调系统升级
-- 屋顶光伏发电（一期）
-- 智能楼宇管理系统
-- 建筑围护结构改善
-- 高效冷水机组更换
-- 热泵系统引入
+至少包含6-10项措施。
 
 **长期措施（24-60个月，深度转型）**
-创建表格，包含：
+创建Markdown表格，包含：
 | 序号 | 措施名称 | 实施范围 | 预期减排量 | 投资成本 | 回收期 | 战略意义 |
 
-至少包含5-7项措施，例如：
-- 建筑深度节能改造
-- 区域能源系统建设
-- 光伏发电扩容（二期）+ 储能
-- 全电气化改造（替代天然气）
-- 绿色电力采购协议
-- 碳汇林建设
-- 碳交易与碳抵消
+至少包含5-7项措施。
 
 **综合策略说明**
-- 投资优先级矩阵（影响力vs实施难度）
-- 协同效应分析（某些措施组合实施效果更佳）
-- 融资建议（ESPC、绿色债券、政府补贴等）
+- 投资优先级矩阵
+- 协同效应分析
+- 融资建议
 
 #### 5. 实施路径与时间表
-- 5年行动路线图（时间轴形式）
+- 5年行动路线图
 - 各阶段目标与里程碑
 - 年度减排目标分解
 - 关键绩效指标（KPI）设定
@@ -152,12 +132,9 @@ ${data.energySource.map((source: any) => `- ${source.name}: ${source.value}%`).j
   * 内部收益率（IRR）
   * 投资回收期
 - 社会环境效益
-  * 等效减少汽车行驶里程
-  * 等效植树造林面积
-  * 改善空气质量贡献
 
 #### 7. 保障措施与建议
-- 组织架构建议（成立碳中和工作组）
+- 组织架构建议
 - 资金保障机制
 - 技术支持建议
 - 监测与评估体系
@@ -165,67 +142,21 @@ ${data.energySource.map((source: any) => `- ${source.name}: ${source.value}%`).j
 
 #### 8. 结论与展望
 - 总结核心观点
-- 强调战略价值（不仅是环保义务，更是战略投资）
+- 强调战略价值
 - 展望碳中和愿景
-
----
-
-## 🎨 HTML样式要求
-
-生成完整的HTML文档，包含以下样式元素：
-
-\`\`\`html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校园碳排放智能诊断报告</title>
-    <style>
-        /* 使用专业配色：蓝绿色系 */
-        body { font-family: 'Microsoft YaHei', sans-serif; line-height: 1.8; color: #333; background: #f5f7fa; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #0066cc; border-bottom: 3px solid #0066cc; padding-bottom: 10px; }
-        h2 { color: #00a86b; margin-top: 40px; border-left: 5px solid #00a86b; padding-left: 15px; }
-        h3 { color: #0088cc; }
-        .summary-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; }
-        .metric-card { display: inline-block; background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 10px; border-radius: 5px; min-width: 200px; }
-        .problem-card { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 5px; }
-        .strategy-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .strategy-table th { background: #0066cc; color: white; padding: 12px; text-align: left; }
-        .strategy-table td { border: 1px solid #ddd; padding: 10px; }
-        .strategy-table tr:nth-child(even) { background: #f8f9fa; }
-        .priority-high { color: #dc3545; font-weight: bold; }
-        .priority-medium { color: #ffc107; font-weight: bold; }
-        .priority-low { color: #28a745; font-weight: bold; }
-        .icon { font-size: 24px; margin-right: 10px; }
-        .timeline { border-left: 3px solid #0066cc; padding-left: 20px; margin: 20px 0; }
-        .timeline-item { margin: 20px 0; position: relative; }
-        .timeline-item:before { content: '●'; position: absolute; left: -28px; color: #0066cc; font-size: 20px; }
-        .chart-placeholder { background: #e3f2fd; border: 2px dashed #0066cc; padding: 40px; text-align: center; color: #0066cc; border-radius: 10px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- 在这里生成完整的报告内容 -->
-    </div>
-</body>
-</html>
-\`\`\`
 
 ---
 
 ## ⚠️ 重要提示
 
-1. **必须生成完整的HTML代码**，从<!DOCTYPE html>开始到</html>结束
+1. **必须生成完整的Markdown代码**
 2. **所有内容使用中文**
-3. **数据要具体**：使用提供的实际数据填充表格和图表
-4. **策略建议部分是核心**：必须详细、具体、可操作，每项措施都要有明确的减排量、成本、回收期
-5. **视觉丰富**：使用彩色卡片、表格、图标、进度条等元素
+3. **数据要具体**：使用提供的实际数据填充表格
+4. **策略建议部分是核心**：必须详细、具体、可操作
+5. **排版整洁**：合理使用标题、列表、表格、加粗等Markdown语法
 6. **专业性**：参考学术报告的严谨性，但语言要通俗易懂
-7. **可打印**：确保样式适合打印输出
 
-现在请生成完整的HTML格式诊断报告。`
+现在请生成完整的Markdown格式诊断报告。`
 
     // Call Deepseek API
     const deepseekApiKey = process.env.DEEPSEEK_API_KEY || ''

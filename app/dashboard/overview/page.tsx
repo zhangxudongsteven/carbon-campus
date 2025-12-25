@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts'
 
 const yearlyData = [
@@ -49,6 +53,133 @@ const seasonData = [
   { season: '冬季', value: 990, fullMark: 1500 },
 ]
 
+// Custom Markdown Components for Beautiful Rendering
+const MarkdownComponents = {
+  h1: ({ children }: { children: React.ReactNode }) => (
+    <h1 className="text-3xl font-bold mb-6 mt-8 pb-3 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent border-b border-cyan-500/30 animate-fade-in">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }: { children: React.ReactNode }) => (
+    <h2 className="text-2xl font-bold mb-5 mt-7 pb-2 bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent border-b border-cyan-500/20">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: { children: React.ReactNode }) => (
+    <h3 className="text-xl font-bold mb-4 mt-6 text-cyan-300 flex items-center gap-2">
+      <span className="w-1.5 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></span>
+      {children}
+    </h3>
+  ),
+  h4: ({ children }: { children: React.ReactNode }) => (
+    <h4 className="text-lg font-semibold mb-3 mt-5 text-cyan-200 pl-4 border-l-2 border-cyan-500/30">
+      {children}
+    </h4>
+  ),
+  p: ({ children }: { children: React.ReactNode }) => (
+    <p className="text-gray-300 mb-4 leading-relaxed text-justify">
+      {children}
+    </p>
+  ),
+  strong: ({ children }: { children: React.ReactNode }) => (
+    <strong className="font-bold text-cyan-300 bg-cyan-500/10 px-1.5 py-0.5 rounded">
+      {children}
+    </strong>
+  ),
+  em: ({ children }: { children: React.ReactNode }) => (
+    <em className="italic text-cyan-200/90">{children}</em>
+  ),
+  blockquote: ({ children }: { children: React.ReactNode }) => (
+    <blockquote className="border-l-4 border-cyan-500/50 bg-gradient-to-r from-cyan-500/5 to-transparent pl-5 py-3 my-5 italic text-gray-300 rounded-r-lg backdrop-blur-sm">
+      {children}
+    </blockquote>
+  ),
+  ul: ({ children }: { children: React.ReactNode }) => (
+    <ul className="space-y-2 mb-5 ml-2 marker:text-cyan-400">{children}</ul>
+  ),
+  ol: ({ children }: { children: React.ReactNode }) => (
+    <ol className="space-y-2 mb-5 ml-2 marker:text-cyan-400 marker:font-bold">{children}</ol>
+  ),
+  li: ({ children }: { children: React.ReactNode }) => (
+    <li className="text-gray-300 leading-relaxed pl-2 hover:text-cyan-200 transition-colors duration-200">
+      {children}
+    </li>
+  ),
+  code: ({ inline, className, children }: { inline?: boolean; className?: string; children: React.ReactNode }) => {
+    if (inline) {
+      return (
+        <code className="bg-gray-800/80 text-cyan-300 px-2 py-1 rounded-md text-sm font-mono border border-cyan-500/20 hover:border-cyan-500/40 transition-all">
+          {children}
+        </code>
+      )
+    }
+    const match = /language-(\w+)/.exec(className || '')
+    const language = match ? match[1] : ''
+    return (
+      <div className="relative my-5 group">
+        <div className="absolute top-0 right-0 px-3 py-1 bg-gray-700/50 rounded-bl-md border border-gray-600/50 text-xs text-gray-400 font-mono">
+          {language || 'code'}
+        </div>
+        <SyntaxHighlighter
+          language={language}
+          style={vscDarkPlus}
+          customStyle={{
+            background: 'rgba(17, 24, 39, 0.95)',
+            borderRadius: '0.5rem',
+            border: '1px solid rgba(6, 182, 212, 0.2)',
+            padding: '1rem',
+            paddingTop: '2.5rem',
+            marginTop: '0',
+            marginBottom: '0',
+          }}
+          wrapLongLines
+          showLineNumbers
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      </div>
+    )
+  },
+  a: ({ href, children, ...props }: { href?: string; children: React.ReactNode; [key: string]: any }) => (
+    <a
+      href={href}
+      className="text-cyan-400 underline hover:text-cyan-300 hover:decoration-2 underline-offset-2 transition-all duration-200 after:content-['_↗'] after:text-xs"
+      target="_blank"
+      rel="noopener noreferrer"
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  hr: () => (
+    <hr className="my-8 border-t border-gray-700/50 bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent h-0.5" />
+  ),
+  table: ({ children }: { children: React.ReactNode }) => (
+    <div className="my-6 overflow-x-auto rounded-lg border border-cyan-500/20 bg-gray-900/30 backdrop-blur-sm">
+      <table className="w-full border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }: { children: React.ReactNode }) => (
+    <thead className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-b border-cyan-500/30">
+      {children}
+    </thead>
+  ),
+  tbody: ({ children }: { children: React.ReactNode }) => (
+    <tbody className="divide-y divide-gray-700/50">{children}</tbody>
+  ),
+  tr: ({ children }: { children: React.ReactNode }) => (
+    <tr className="hover:bg-cyan-500/5 transition-colors duration-150">{children}</tr>
+  ),
+  th: ({ children }: { children: React.ReactNode }) => (
+    <th className="px-4 py-3 text-left text-sm font-semibold text-cyan-400 uppercase tracking-wider">
+      {children}
+    </th>
+  ),
+  td: ({ children }: { children: React.ReactNode }) => (
+    <td className="px-4 py-3 text-sm text-gray-300">{children}</td>
+  ),
+}
+
 // Diagnosis Tab Component
 function DiagnosisTab() {
   const [currentStep, setCurrentStep] = useState(0)
@@ -59,6 +190,7 @@ function DiagnosisTab() {
   const [searchResults, setSearchResults] = useState<string[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
 
   const collectSystemData = () => {
     return {
@@ -184,8 +316,8 @@ function DiagnosisTab() {
                 setDiagnosisResult(accumulatedText)
 
                 // Auto scroll to bottom
-                if (resultRef.current) {
-                  resultRef.current.scrollTop = resultRef.current.scrollHeight
+                if (mainRef.current) {
+                  mainRef.current.scrollTop = mainRef.current.scrollHeight
                 }
               }
             } catch (e) {
@@ -244,7 +376,7 @@ function DiagnosisTab() {
   }
 
   return (
-    <main className="p-6 space-y-6">
+    <main ref={mainRef} className="p-6 space-y-6 h-full overflow-y-auto scroll-smooth custom-scrollbar">
       {/* Diagnosis Process */}
       <div className="bg-gradient-to-br from-gray-900/90 via-blue-900/50 to-gray-900/90 backdrop-blur-md border border-cyan-500/30 rounded-xl p-8">
         <h2 className="text-2xl font-bold text-cyan-300 mb-6 flex items-center">
@@ -364,25 +496,21 @@ function DiagnosisTab() {
 
           <div
             ref={resultRef}
-            className="bg-black/30 rounded-lg p-6 border border-cyan-500/20 max-h-[600px] overflow-y-auto scroll-smooth"
-            style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#22d3ee #1e293b'
-            }}
+            className="bg-black/30 rounded-lg p-6 border border-cyan-500/20"
           >
             <style jsx>{`
-              div::-webkit-scrollbar {
+              .custom-scrollbar::-webkit-scrollbar {
                 width: 8px;
               }
-              div::-webkit-scrollbar-track {
+              .custom-scrollbar::-webkit-scrollbar-track {
                 background: #1e293b;
                 border-radius: 4px;
               }
-              div::-webkit-scrollbar-thumb {
+              .custom-scrollbar::-webkit-scrollbar-thumb {
                 background: #22d3ee;
                 border-radius: 4px;
               }
-              div::-webkit-scrollbar-thumb:hover {
+              .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                 background: #06b6d4;
               }
             `}</style>
@@ -428,7 +556,14 @@ function DiagnosisTab() {
                   AI诊断分析
                 </h3>
                 <div className="text-gray-300 leading-relaxed">
-                  <div dangerouslySetInnerHTML={{ __html: diagnosisResult }} />
+                  <div className="markdown-content">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={MarkdownComponents}
+                    >
+                      {diagnosisResult}
+                    </ReactMarkdown>
+                  </div>
                   {isStreaming && (
                     <span className="inline-block w-2 h-5 ml-1 bg-cyan-400 animate-pulse"></span>
                   )}
@@ -631,10 +766,10 @@ export default function OverviewPage() {
     router.push('/login')
   }
 
-  const toggleMenu = (menuId: string) => {
+  const toggleMenu = (menuId: any) => {
     setExpandedMenus(prev => ({
       ...prev,
-      [menuId]: !prev[menuId]
+      [menuId]: !prev[menuId as keyof typeof prev]
     }))
   }
 
@@ -667,9 +802,9 @@ export default function OverviewPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent tracking-wide">
-                    校园碳排放监测系统
+                    武汉理工大学低碳校园智慧监测与诊断系统
                   </h1>
-                  <p className="text-xs text-cyan-400/60 mt-0.5">Campus Carbon Emission Monitoring System</p>
+                  <p className="text-xs text-cyan-400/60 mt-0.5">WHUT Low-Carbon Campus Smart Monitoring and Diagnosis System</p>
                 </div>
               </div>
 
@@ -683,7 +818,7 @@ export default function OverviewPage() {
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    综合概览
+                    全景监测
                   </button>
                   <button
                     onClick={() => setActiveTab('statistics')}
@@ -693,7 +828,7 @@ export default function OverviewPage() {
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    指标统计
+                    洞察分析
                   </button>
                   <button
                     onClick={() => setActiveTab('diagnosis')}
@@ -863,7 +998,7 @@ export default function OverviewPage() {
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                         <p className="text-cyan-300 text-sm font-medium">实时校园场景监测</p>
-                        <p className="text-gray-400 text-xs mt-1">Real-time Campus Scene Monitoring</p>
+                        <p className="text-gray-400 text-xs mt-1">WHUT Real-time Campus Monitoring</p>
                       </div>
                     </div>
                   </div>
@@ -1512,7 +1647,7 @@ export default function OverviewPage() {
                             dataKey="value"
                             stroke="#0a0e1a"
                             strokeWidth={2}
-                            label={({ name, percentage }) => `${percentage}%`}
+                            label={({ payload }: any) => `${payload.percentage}%`}
                           >
                             {scopeData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -2123,7 +2258,9 @@ export default function OverviewPage() {
         )}
 
         {activeTab === 'diagnosis' && (
-          <DiagnosisTab />
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <DiagnosisTab />
+          </div>
         )}
       </div>
     </div>
