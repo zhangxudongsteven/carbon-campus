@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园碳排放智能运维系统 - 武汉理工大学</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.birds.min.js"></script>
+    <style>
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        .sidebar-item:hover {
+            background-color: rgba(34, 197, 94, 0.1);
+            border-left: 3px solid #22c55e;
+        }
+        .sidebar-item.active {
+            background-color: rgba(34, 197, 94, 0.2);
+            border-left: 3px solid #22c55e;
+            color: #16a34a;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .collapsible-content.expanded {
+            max-height: 500px;
+        }
+        .chart-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        .warning-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        .detail-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .trend-up { color: #ef4444; }
+        .trend-down { color: #22c55e; }
+        .trend-stable { color: #6b7280; }
+        .scope-card {
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+        .scope-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .scope1 { border-left-color: #3b82f6; background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%); }
+        .scope2 { border-left-color: #ef4444; background: linear-gradient(135deg, #fee2e2 0%, #ffffff 100%); }
+        .scope3 { border-left-color: #22c55e; background: linear-gradient(135deg, #dcfce7 0%, #ffffff 100%); }
+        
+        .gauge-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .season-block {
+            display: inline-block;
+            width: 20px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 4px;
+        }
+        .spring { background-color: #86efac; }
+        .summer { background-color: #fdba74; }
+        .autumn { background-color: #fbbf24; }
+        .winter { background-color: #60a5fa; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 背景动画 -->
+    <div id="vanta-bg" class="background-animation"></div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-leaf text-green-600 text-2xl"></i>
+                    <h1 class="text-xl font-bold text-gray-800">校园碳排放智能运维系统</h1>
+                    <span class="text-sm text-gray-500">武汉理工大学</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full warning-indicator"></div>
+                        <span class="text-sm text-gray-600">系统运行正常</span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        最后更新: <span id="lastUpdate">2024-10-12 14:30</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex h-screen pt-16">
+        <!-- 左侧导航栏 -->
+        <div class="w-64 bg-white shadow-lg overflow-y-auto">
+            <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">校园整体监测</h3>
+                
+                <!-- 总量类指标 -->
+                <div class="mb-4">
+                    <div class="collapsible-header flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100" data-target="total-metrics">
+                        <span class="font-medium text-gray-700">总量类指标</span>
+                        <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+                    </div>
+                    <div class="collapsible-content expanded" id="total-metrics">
+                        <div class="mt-2 space-y-1">
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="total-emission">
+                                <i class="fas fa-chart-bar text-green-600 mr-2"></i>综合碳排放量
+                            </div>
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="scope-emission">
+                                <i class="fas fa-pie-chart text-blue-600 mr-2"></i>分范围碳排放量
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 强度类指标 -->
+                <div class="mb-4">
+                    <div class="collapsible-header flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100" data-target="intensity-metrics">
+                        <span class="font-medium text-gray-700">强度类指标</span>
+                        <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+                    </div>
+                    <div class="collapsible-content" id="intensity-metrics">
+                        <div class="mt-2 space-y-1">
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="per-capita">
+                                <i class="fas fa-users text-purple-600 mr-2"></i>人均碳排放量
+                            </div>
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="area-intensity">
+                                <i class="fas fa-building text-orange-600 mr-2"></i>单位面积碳排放量
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 结构类指标 -->
+                <div class="mb-4">
+                    <div class="collapsible-header flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100" data-target="structure-metrics">
+                        <span class="font-medium text-gray-700">结构类指标</span>
+                        <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+                    </div>
+                    <div class="collapsible-content" id="structure-metrics">
+                        <div class="mt-2 space-y-1">
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="functional-structure">
+                                <i class="fas fa-sitemap text-indigo-600 mr-2"></i>功能区结构占比
+                            </div>
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="source-structure">
+                                <i class="fas fa-bolt text-yellow-600 mr-2"></i>来源结构占比
+                            </div>
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="time-distribution">
+                                <i class="fas fa-clock text-red-600 mr-2"></i>时间结构分布
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 效率类指标 -->
+                <div class="mb-4">
+                    <div class="collapsible-header flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100" data-target="efficiency-metrics">
+                        <span class="font-medium text-gray-700">效率类指标</span>
+                        <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+                    </div>
+                    <div class="collapsible-content" id="efficiency-metrics">
+                        <div class="mt-2 space-y-1">
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="renewable-energy">
+                                <i class="fas fa-solar-panel text-green-600 mr-2"></i>可再生能源利用率
+                            </div>
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="green-electricity">
+                                <i class="fas fa-certificate text-blue-600 mr-2"></i>外购绿电绿证占比
+                            </div>
+                            <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="photovoltaic">
+                                <i class="fas fa-sun text-yellow-600 mr-2"></i>校园消纳光伏电量占比
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- 功能区分析 -->
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">功能区详细分析</h3>
+                <div class="space-y-1">
+                    <!-- 科研楼功能区 -->
+                    <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="research-emission-monitoring">
+                        <i class="fas fa-flask text-blue-600 mr-2"></i>科研楼
+                    </div>
+
+                    <!-- 宿舍楼功能区 -->
+                    <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="dormitory-emission-monitoring">
+                        <i class="fas fa-bed text-purple-600 mr-2"></i>宿舍楼
+                    </div>
+
+                    <!-- 教学楼功能区 -->
+                    <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="teaching-emission-monitoring">
+                        <i class="fas fa-chalkboard text-green-600 mr-2"></i>教学楼
+                    </div>
+
+                    <!-- 图书馆功能区 -->
+                    <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="library-emission-monitoring">
+                        <i class="fas fa-book text-indigo-600 mr-2"></i>图书馆
+                    </div>
+
+                    <!-- 食堂功能区 -->
+                    <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="canteen-emission-monitoring">
+                        <i class="fas fa-utensils text-orange-600 mr-2"></i>食堂
+                    </div>
+
+                    <!-- 体育馆功能区 -->
+                    <div class="sidebar-item p-2 rounded cursor-pointer text-sm" data-section="gymnasium-emission-monitoring">
+                        <i class="fas fa-dumbbell text-red-600 mr-2"></i>体育馆
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 右侧内容区 -->
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
+                <!-- 页面标题 -->
+                <div class="mb-6">
+                    <h2 id="page-title" class="text-2xl font-bold text-gray-800 mb-2">校园碳排放监测总览</h2>
+                    <p id="page-subtitle" class="text-gray-600">实时监控校园碳排放数据，助力绿色低碳转型</p>
+                </div>
+
+                <!-- 主要内容区域 -->
+                <div id="main-content">
+                    <!-- 默认显示综合碳排放量 -->
+                    <div id="total-emission" class="content-section">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 校园年度生态碳汇总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">校园年度生态碳汇</h3>
+                                <div id="carbon-sink-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">70,698</p>
+                                        <p class="text-sm text-green-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 1.02% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">3,915</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 19.2% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">净碳排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">68,245</p>
+                                        <p class="text-sm text-orange-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-leaf text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">扣除碳汇后</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">碳汇总量</p>
+                                        <p class="text-2xl font-bold text-gray-800">2,453</p>
+                                        <p class="text-sm text-green-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-tree text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">绿地固碳量</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 分范围碳排放页面 -->
+                    <div id="scope-emission" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">分范围碳排放量监测 (Scope 1/2/3)</h2>
+                            <p class="text-gray-600">核算边界：南湖校区地界范围内所有学校建筑及设施</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- 环形饼图 -->
+                            <div class="lg:col-span-2 chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">分范围碳排放结构</h3>
+                                <div id="scope-pie-chart" style="height: 400px;"></div>
+                            </div>
+                            
+                            <!-- 详细信息面板 -->
+                            <div class="detail-panel p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">详细信息</h3>
+                                <div id="scope-detail-content">
+                                    <div class="text-center text-gray-500 py-8">
+                                        <i class="fas fa-hand-pointer text-4xl mb-3"></i>
+                                        <p>点击饼图区块查看详细信息</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 数据卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                            <div class="scope-card scope1 p-6 rounded-lg shadow-lg">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-semibold text-gray-800">Scope 1 (直接排放)</h4>
+                                    <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                                </div>
+                                <div class="text-3xl font-bold text-blue-600 mb-2">3,252 吨</div>
+                                <div class="text-sm text-gray-600 mb-3">占比 4.6%</div>
+                                <div class="text-xs text-gray-500 mb-3">主要来源：食堂天然气炉灶</div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-down text-green-600 text-sm"></i>
+                                    <span class="text-sm text-green-600">-2.1% 同比2022年</span>
+                                </div>
+                            </div>
+                            
+                            <div class="scope-card scope2 p-6 rounded-lg shadow-lg">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-semibold text-gray-800">Scope 2 (间接排放-电力)</h4>
+                                    <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                                </div>
+                                <div class="text-3xl font-bold text-red-600 mb-2">67,446 吨</div>
+                                <div class="text-sm text-gray-600 mb-3">占比 95.4%</div>
+                                <div class="text-xs text-gray-500 mb-3">主要来源：外购电力</div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-up text-red-600 text-sm"></i>
+                                    <span class="text-sm text-red-600">+0.4% 同比2022年</span>
+                                </div>
+                            </div>
+                            
+                            <div class="scope-card scope3 p-6 rounded-lg shadow-lg">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-semibold text-gray-800">Scope 3 (其他间接)</h4>
+                                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                                </div>
+                                <div class="text-3xl font-bold text-green-600 mb-2">841 吨</div>
+                                <div class="text-sm text-gray-600 mb-3">占比 1.19%</div>
+                                <div class="text-xs text-gray-500 mb-3">主要来源：用水等</div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-down text-green-600 text-sm"></i>
+                                    <span class="text-sm text-green-600">-1.8% 同比2022年</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 人均碳排放页面 -->
+                    <div id="per-capita" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">人均碳排放量监测（2023-2024）</h2>
+                            <p class="text-gray-600">核算标准 - 参考 T/TJKZS 0001-2024（夏热冬冷地区高校人均限值 1020kgCO₂/人・年）</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">人均碳排放量趋势</h3>
+                                <div class="mb-4">
+                                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                        <span>标准限值: <span class="font-semibold text-red-600">1020kg/人·年</span></span>
+                                        <span>当前值: <span class="font-semibold text-blue-600" id="current-per-capita">987kg/人·年</span></span>
+                                    </div>
+                                </div>
+                                <div id="per-capita-chart" style="height: 300px;"></div>
+                            </div>
+                            
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">人均排放对比分析</h3>
+                                <div id="per-capita-comparison-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 详细分析 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-users text-purple-600 mr-2"></i>人均碳排放详细分析
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                                    <h4 class="font-semibold text-blue-800">师生总数</h4>
+                                    <p class="text-2xl font-bold text-blue-600">71,632</p>
+                                    <p class="text-sm text-blue-700 mt-1">学生: 65,432人 | 教职工: 6,200人</p>
+                                </div>
+                                <div class="bg-green-50 border-l-4 border-green-500 p-4">
+                                    <h4 class="font-semibold text-green-800">达标情况</h4>
+                                    <p class="text-2xl font-bold text-green-600">良好</p>
+                                    <p class="text-sm text-green-700 mt-1">低于标准限值3.2%</p>
+                                </div>
+                                <div class="bg-orange-50 border-l-4 border-orange-500 p-4">
+                                    <h4 class="font-semibold text-orange-800">改进空间</h4>
+                                    <p class="text-2xl font-bold text-orange-600">15%</p>
+                                    <p class="text-sm text-orange-700 mt-1">通过管理优化可进一步降低</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 单位面积碳排放量页面 -->
+                    <div id="area-intensity" class="content-section hidden">
+                    </div>
+
+                    <!-- 功能区结构占比页面 -->
+                    <div id="functional-structure" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">2023年碳排放功能区结构占比</h2>
+                            <p class="text-gray-600">功能区范围 - 教学楼/科研楼/图书馆/食堂/体育馆/宿舍（参考文档1功能区划分）</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- 饼图 -->
+                            <div class="lg:col-span-2 chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">功能区碳排放结构占比</h3>
+                                <div id="functional-structure-chart" style="height: 400px;"></div>
+                            </div>
+                            
+                            <!-- 详细信息面板 -->
+                            <div class="detail-panel p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">功能区详情</h3>
+                                <div id="functional-detail-content">
+                                    <div class="text-center text-gray-500 py-8">
+                                        <i class="fas fa-hand-pointer text-4xl mb-3"></i>
+                                        <p>点击饼图区块查看功能区详情</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+
+                    </div>
+
+                    <!-- 来源结构占比页面 -->
+                    <div id="source-structure" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">碳排放来源结构占比</h2>
+                            <p class="text-gray-600">各类能源消耗产生的碳排放占比分析</p>
+                        </div>
+
+                        <div class="chart-container p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">能源来源结构分析</h3>
+                            <div id="source-structure-chart" style="height: 400px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 时间结构分布页面 -->
+                    <div id="time-distribution" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">碳排放时间结构分布</h2>
+                            <p class="text-gray-600">季节性、月度碳排放模式分析</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <!-- 季节分布 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">碳排放季节分布占比</h3>
+                                <div id="seasonal-distribution-chart" style="height: 300px;"></div>
+                            </div>
+                            
+                            <!-- 月度分布 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">碳排放月度分布占比</h3>
+                                <div id="monthly-distribution-detailed-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 季节说明 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>季节分布说明
+                            </h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="text-center p-4 bg-green-50 rounded-lg">
+                                    <div class="season-block spring mx-auto mb-2"></div>
+                                    <h4 class="font-semibold text-green-800">春季</h4>
+                                    <p class="text-sm text-green-600">3-5月</p>
+                                    <p class="text-xs text-green-700 mt-1">占比 20%</p>
+                                </div>
+                                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                                    <div class="season-block summer mx-auto mb-2"></div>
+                                    <h4 class="font-semibold text-orange-800">夏季</h4>
+                                    <p class="text-sm text-orange-600">6-8月</p>
+                                    <p class="text-xs text-orange-700 mt-1">占比 30%</p>
+                                </div>
+                                <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                                    <div class="season-block autumn mx-auto mb-2"></div>
+                                    <h4 class="font-semibold text-yellow-800">秋季</h4>
+                                    <p class="text-sm text-yellow-600">9-11月</p>
+                                    <p class="text-xs text-yellow-700 mt-1">占比 15%</p>
+                                </div>
+                                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div class="season-block winter mx-auto mb-2"></div>
+                                    <h4 class="font-semibold text-blue-800">冬季</h4>
+                                    <p class="text-sm text-blue-600">12-2月</p>
+                                    <p class="text-xs text-blue-700 mt-1">占比 35%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 可再生能源利用率页面 -->
+                    <div id="renewable-energy" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">可再生能源利用率</h2>
+                            <p class="text-gray-600">光伏、风电等清洁能源利用情况分析</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <!-- 仪表盘 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">当前利用率</h3>
+                                <div class="gauge-container" style="height: 300px;">
+                                    <div id="renewable-gauge-chart" style="width: 100%; height: 100%;"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 趋势图 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">利用率趋势</h3>
+                                <div id="renewable-trend-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 详细数据 -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="metric-card p-4 text-center">
+                                <i class="fas fa-solar-panel text-yellow-600 text-2xl mb-2"></i>
+                                <h4 class="font-semibold text-gray-800 mb-1">光伏发电</h4>
+                                <p class="text-2xl font-bold text-yellow-600">28%</p>
+                                <p class="text-sm text-gray-600">占总用电量</p>
+                            </div>
+                            <div class="metric-card p-4 text-center">
+                                <i class="fas fa-wind text-blue-600 text-2xl mb-2"></i>
+                                <h4 class="font-semibold text-gray-800 mb-1">地热能</h4>
+                                <p class="text-2xl font-bold text-blue-600">7%</p>
+                                <p class="text-sm text-gray-600">占总用电量</p>
+                            </div>
+                            <div class="metric-card p-4 text-center">
+                                <i class="fas fa-leaf text-green-600 text-2xl mb-2"></i>
+                                <h4 class="font-semibold text-gray-800 mb-1">总计</h4>
+                                <p class="text-2xl font-bold text-green-600">35%</p>
+                                <p class="text-sm text-gray-600">可再生能源利用率</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 外购绿电绿证占比页面 -->
+                    <div id="green-electricity" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">外购绿电绿证占比</h2>
+                            <p class="text-gray-600">绿色电力采购和证书持有情况</p>
+                        </div>
+
+                        <div class="chart-container p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">绿电绿证占比趋势</h3>
+                            <div id="green-electricity-chart" style="height: 400px;"></div>
+                        </div>
+
+                        <!-- 目标对比 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-target text-purple-600 mr-2"></i>目标对比
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="metric-card p-4 text-center">
+                                    <h4 class="font-semibold text-gray-800 mb-2">2023年实际</h4>
+                                    <p class="text-3xl font-bold text-blue-600">5%</p>
+                                    <p class="text-sm text-gray-600">外购绿电绿证占比</p>
+                                </div>
+                                <div class="metric-card p-4 text-center">
+                                    <h4 class="font-semibold text-gray-800 mb-2">2025年目标</h4>
+                                    <p class="text-3xl font-bold text-green-600">10%</p>
+                                    <p class="text-sm text-gray-600">参考文档2引领值</p>
+                                </div>
+                                <div class="metric-card p-4 text-center">
+                                    <h4 class="font-semibold text-gray-800 mb-2">剩余差距</h4>
+                                    <p class="text-3xl font-bold text-orange-600">5%</p>
+                                    <p class="text-sm text-gray-600">需要提升空间</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 绿电证书展示 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-certificate text-green-600 mr-2"></i>绿色电力证书
+                            </h3>
+                            <div class="flex items-center justify-center p-8 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg">
+                                <div class="text-center">
+                                    <i class="fas fa-certificate text-green-600 text-6xl mb-4"></i>
+                                    <h4 class="text-xl font-bold text-gray-800 mb-2">绿色电力证书</h4>
+                                    <p class="text-gray-600">武汉理工大学已获得绿色电力证书</p>
+                                    <p class="text-sm text-gray-500 mt-2">证书编号: WHLG-2023-001</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 校园消纳光伏电量占比页面 -->
+                    <div id="photovoltaic" class="content-section hidden">
+                        <!-- 标题栏 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">校园消纳光伏电量占比</h2>
+                            <p class="text-gray-600">分布式光伏发电消纳情况分析</p>
+                        </div>
+
+                        <div class="chart-container p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">光伏电量流向分析</h3>
+                            <div id="photovoltaic-flow-chart" style="height: 400px;"></div>
+                        </div>
+
+                        <!-- 流向数据 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="metric-card p-6">
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                                    <i class="fas fa-solar-panel text-yellow-600 mr-2"></i>
+                                    光伏电站总发电量
+                                </h4>
+                                <div class="text-center">
+                                    <p class="text-4xl font-bold text-yellow-600 mb-2">2,450,000</p>
+                                    <p class="text-gray-600">kWh/年</p>
+                                </div>
+                                <div class="mt-4 text-sm text-gray-600">
+                                    <div class="flex justify-between">
+                                        <span>科研楼屋顶:</span>
+                                        <span>1,200,000 kWh</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>宿舍屋顶:</span>
+                                        <span>800,000 kWh</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>体育馆屋顶:</span>
+                                        <span>450,000 kWh</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card p-6">
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                                    <i class="fas fa-plug text-green-600 mr-2"></i>
+                                    校园消纳量
+                                </h4>
+                                <div class="text-center">
+                                    <p class="text-4xl font-bold text-green-600 mb-2">2,156,000</p>
+                                    <p class="text-gray-600">kWh/年</p>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <p class="text-2xl font-bold text-blue-600">18%</p>
+                                    <p class="text-sm text-gray-600">消纳占比</p>
+                                    <p class="text-xs text-green-600 mt-1">同比2022年 +3%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 科研楼概览页面 -->
+                    <div id="research-building" class="content-section hidden">
+                        <div class="text-center py-12">
+                            <i class="fas fa-flask text-6xl text-blue-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">科研楼功能区分析</h3>
+                            <p class="text-gray-600">请从左侧导航选择具体指标进行查看</p>
+                            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">25,543</div>
+                                    <div class="text-sm text-blue-800">总排放量(吨)</div>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">36.12%</div>
+                                    <div class="text-sm text-purple-800">占校园比例</div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-orange-600">185</div>
+                                    <div class="text-sm text-orange-800">单位面积排放</div>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">-4.8%</div>
+                                    <div class="text-sm text-green-800">同比增长率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 宿舍楼概览页面 -->
+                    <div id="dormitory-building" class="content-section hidden">
+                        <div class="text-center py-12">
+                            <i class="fas fa-bed text-6xl text-purple-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">宿舍楼功能区分析</h3>
+                            <p class="text-gray-600">请从左侧导航选择具体指标进行查看</p>
+                            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">22,678</div>
+                                    <div class="text-sm text-blue-800">总排放量(吨)</div>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">32.05%</div>
+                                    <div class="text-sm text-purple-800">占校园比例</div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-orange-600">95</div>
+                                    <div class="text-sm text-orange-800">单位面积排放</div>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">-3.2%</div>
+                                    <div class="text-sm text-green-800">同比增长率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 宿舍楼碳排放量页面 -->
+                    <div id="dormitory-emission-monitoring" class="content-section hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="dormitory-yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="dormitory-monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 日碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">日碳排放总量</h3>
+                                <div id="dormitory-daily-emission-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">22,678</p>
+                                        <p class="text-sm text-purple-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-purple-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 3.2% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">2,010</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 18.5% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">占校园比例</p>
+                                        <p class="text-2xl font-bold text-gray-800">32.05%</p>
+                                        <p class="text-sm text-orange-600">总排放量</p>
+                                    </div>
+                                    <i class="fas fa-percentage text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">宿舍楼占比</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">楼栋数量</p>
+                                        <p class="text-2xl font-bold text-gray-800">31</p>
+                                        <p class="text-sm text-green-600">栋</p>
+                                    </div>
+                                    <i class="fas fa-building text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">宿舍楼总数</span>
+                                </div>
+                            </div>
+                        </div>
+                  </div>
+
+
+
+
+                    <!-- 教学楼概览页面 -->
+                    <div id="teaching-building" class="content-section hidden">
+                        <div class="text-center py-12">
+                            <i class="fas fa-chalkboard text-6xl text-green-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">教学楼功能区分析</h3>
+                            <p class="text-gray-600">请从左侧导航选择具体指标进行查看</p>
+                            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">6,845</div>
+                                    <div class="text-sm text-blue-800">总排放量(吨)</div>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">9.67%</div>
+                                    <div class="text-sm text-purple-800">占校园比例</div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-orange-600">78</div>
+                                    <div class="text-sm text-orange-800">单位面积排放</div>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">-2.1%</div>
+                                    <div class="text-sm text-green-800">同比增长率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 教学楼碳排放量页面 -->
+                    <div id="teaching-emission-monitoring" class="content-section hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="teaching-yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="teaching-monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 日碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">日碳排放总量</h3>
+                                <div id="teaching-daily-emission-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">6,845</p>
+                                        <p class="text-sm text-green-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 2.1% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">605</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 12.3% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">占校园比例</p>
+                                        <p class="text-2xl font-bold text-gray-800">9.67%</p>
+                                        <p class="text-sm text-orange-600">总排放量</p>
+                                    </div>
+                                    <i class="fas fa-percentage text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">教学楼占比</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">楼栋数量</p>
+                                        <p class="text-2xl font-bold text-gray-800">9</p>
+                                        <p class="text-sm text-green-600">栋</p>
+                                    </div>
+                                    <i class="fas fa-building text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">教学楼总数</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- 图书馆概览页面 -->
+                    <div id="library-building" class="content-section hidden">
+                        <div class="text-center py-12">
+                            <i class="fas fa-book text-6xl text-indigo-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">图书馆功能区分析</h3>
+                            <p class="text-gray-600">请从左侧导航选择具体指标进行查看</p>
+                            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">8,456</div>
+                                    <div class="text-sm text-blue-800">总排放量(吨)</div>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">11.95%</div>
+                                    <div class="text-sm text-purple-800">占校园比例</div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-orange-600">89</div>
+                                    <div class="text-sm text-orange-800">单位面积排放</div>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">-1.8%</div>
+                                    <div class="text-sm text-green-800">同比增长率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 图书馆碳排放量页面 -->
+                    <div id="library-emission-monitoring" class="content-section hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="library-yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="library-monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 日碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">日碳排放总量</h3>
+                                <div id="library-daily-emission-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">8,456</p>
+                                        <p class="text-sm text-indigo-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-indigo-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 1.8% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">748</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 8.5% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">占校园比例</p>
+                                        <p class="text-2xl font-bold text-gray-800">11.95%</p>
+                                        <p class="text-sm text-orange-600">总排放量</p>
+                                    </div>
+                                    <i class="fas fa-percentage text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">图书馆占比</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">楼栋数量</p>
+                                        <p class="text-2xl font-bold text-gray-800">1</p>
+                                        <p class="text-sm text-green-600">栋</p>
+                                    </div>
+                                    <i class="fas fa-building text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">图书馆总数</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- 食堂概览页面 -->
+                    <div id="canteen-building" class="content-section hidden">
+                        <div class="text-center py-12">
+                            <i class="fas fa-utensils text-6xl text-orange-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">食堂功能区分析</h3>
+                            <p class="text-gray-600">请从左侧导航选择具体指标进行查看</p>
+                            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">4,067</div>
+                                    <div class="text-sm text-blue-800">总排放量(吨)</div>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">5.74%</div>
+                                    <div class="text-sm text-purple-800">占校园比例</div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-orange-600">156</div>
+                                    <div class="text-sm text-orange-800">单位面积排放</div>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">-1.5%</div>
+                                    <div class="text-sm text-green-800">同比增长率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 食堂碳排放量页面 -->
+                    <div id="canteen-emission-monitoring" class="content-section hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="canteen-yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="canteen-monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 日碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">日碳排放总量</h3>
+                                <div id="canteen-daily-emission-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">4,067</p>
+                                        <p class="text-sm text-orange-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 1.5% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">360</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 6.2% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">占校园比例</p>
+                                        <p class="text-2xl font-bold text-gray-800">5.74%</p>
+                                        <p class="text-sm text-orange-600">总排放量</p>
+                                    </div>
+                                    <i class="fas fa-percentage text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">食堂占比</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">楼栋数量</p>
+                                        <p class="text-2xl font-bold text-gray-800">2</p>
+                                        <p class="text-sm text-green-600">栋</p>
+                                    </div>
+                                    <i class="fas fa-building text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">食堂总数</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- 体育馆概览页面 -->
+                    <div id="gymnasium-building" class="content-section hidden">
+                        <div class="text-center py-12">
+                            <i class="fas fa-dumbbell text-6xl text-red-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">体育馆功能区分析</h3>
+                            <p class="text-gray-600">请从左侧导航选择具体指标进行查看</p>
+                            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">3,167</div>
+                                    <div class="text-sm text-blue-800">总排放量(吨)</div>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">4.47%</div>
+                                    <div class="text-sm text-purple-800">占校园比例</div>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-orange-600">198</div>
+                                    <div class="text-sm text-orange-800">单位面积排放</div>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">-2.3%</div>
+                                    <div class="text-sm text-green-800">同比增长率</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 体育馆碳排放量页面 -->
+                    <div id="gymnasium-emission-monitoring" class="content-section hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="gymnasium-yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="gymnasium-monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 日碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">日碳排放总量</h3>
+                                <div id="gymnasium-daily-emission-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">3,167</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 2.3% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">280</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 10.2% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">占校园比例</p>
+                                        <p class="text-2xl font-bold text-gray-800">4.47%</p>
+                                        <p class="text-sm text-orange-600">总排放量</p>
+                                    </div>
+                                    <i class="fas fa-percentage text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">体育馆占比</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">楼栋数量</p>
+                                        <p class="text-2xl font-bold text-gray-800">7</p>
+                                        <p class="text-sm text-green-600">栋</p>
+                                    </div>
+                                    <i class="fas fa-building text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">体育馆总数</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+
+
+
+                    <!-- 科研楼碳排放量页面 -->
+                    <div id="research-emission-monitoring" class="content-section hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <!-- 年碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">年碳排放总量</h3>
+                                <div id="research-yearly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 月碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">月碳排放总量</h3>
+                                <div id="research-monthly-emission-chart" style="height: 300px;"></div>
+                            </div>
+                            <!-- 日碳排放总量 -->
+                            <div class="chart-container p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">日碳排放总量</h3>
+                                <div id="research-daily-emission-chart" style="height: 300px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2023年总排放量</p>
+                                        <p class="text-2xl font-bold text-gray-800">16,020</p>
+                                        <p class="text-sm text-blue-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-chart-line text-blue-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-green-600">↓ 2.3% 同比2022年</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">2024年3月排放</p>
+                                        <p class="text-2xl font-bold text-gray-800">1,420</p>
+                                        <p class="text-sm text-red-600">吨CO₂</p>
+                                    </div>
+                                    <i class="fas fa-calendar-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-red-600">↑ 15.8% 同比2月</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">占校园比例</p>
+                                        <p class="text-2xl font-bold text-gray-800">22.66%</p>
+                                        <p class="text-sm text-orange-600">总排放量</p>
+                                    </div>
+                                    <i class="fas fa-percentage text-orange-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">科研楼占比</span>
+                                </div>
+                            </div>
+                            <div class="metric-card p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600">楼栋数量</p>
+                                        <p class="text-2xl font-bold text-gray-800">8</p>
+                                        <p class="text-sm text-green-600">栋</p>
+                                    </div>
+                                    <i class="fas fa-building text-green-600 text-2xl"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-600">实验楼总数</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 mt-8">
+        <div class="max-w-7xl mx-auto py-6 px-4">
+            <div class="text-center text-gray-500 text-sm">
+                © 2024 武汉理工大学 校园碳排放智能运维系统 | 数据更新时间: 2024-10-12
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
